@@ -106,12 +106,14 @@
         async function loadData() {
             try {
                 // Load electricity usage data
-                const usageRes = await fetch('electricity_usages_en.json');
+                const usageRes = await fetch('./electricity_usages_en.json');
+                if (!usageRes.ok) throw new Error(`Failed to load usage data: ${usageRes.status}`);
                 const usageRaw = await usageRes.json();
-                usageData = Array.isArray(usageRaw) ? usageRaw[0].Sheet1 : usageRaw;
+                usageData = usageRaw.Sheet1 || usageRaw;
 
                 // Load electricity users data
-                const usersRes = await fetch('electricity_users_en.json');
+                const usersRes = await fetch('./electricity_users_en.json');
+                if (!usersRes.ok) throw new Error(`Failed to load users data: ${usersRes.status}`);
                 usersData = await usersRes.json();
 
                 // Populate province filters
@@ -151,7 +153,9 @@
                 updateUsersChart();
             } catch (error) {
                 console.error('Error loading data:', error);
-                alert('Error loading data. Please check the JSON files.');
+                const message = `Error loading data:\n\n${error.message}\n\nMake sure electricity_usages_en.json and electricity_users_en.json are in the same folder as this HTML file.`;
+                alert(message);
+                document.body.innerHTML += `<div style="padding: 20px; background-color: #fee; color: #c00; font-family: Arial;"><strong>Error:</strong> ${message.replace(/\n/g, '<br>')}</div>`;
             }
         }
 
