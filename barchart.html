@@ -3,302 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electricity Usage Dashboard</title>
+    <title>Electricity Data Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root {
-            --primary: #2c3e50;
-            --accent: #3498db;
-            --bg: #f4f7f6;
-            --card-bg: #ffffff;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        h1 {
-            color: var(--primary);
-            margin-bottom: 10px;
-        }
-
-        /* Controls Section */
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Controls */
         .controls {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 30px;
+            background: white; padding: 25px; border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px;
+            display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
         }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-weight: bold; font-size: 0.9rem; color: var(--primary); }
+        select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-width: 200px; }
+        
+        /* Charts */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: #555; margin-bottom: 15px; font-size: 1.1rem; }
+        .chart-box { position: relative; height: 350px; }
+        
+        /* Loading Overlay */
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:999; display:flex; justify-content:center; align-items:center; flex-direction: column; }
+        .error-msg { color: red; max-width: 600px; text-align: center; margin-top: 20px; display: none; }
 
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            min-width: 200px;
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            color: var(--primary);
-        }
-
-        select {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        select:focus {
-            border-color: var(--accent);
-        }
-
-        /* Charts Grid */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .chart-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-
-        h2 {
-            text-align: center;
-            font-size: 1.2rem;
-            color: #555;
-            margin-bottom: 20px;
-        }
-
-        canvas {
-            width: 100% !important;
-            height: 400px !important;
-        }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h1>⚡ Provincial Electricity Dashboard</h1>
-        <p>Filter by Year and Province to view usage statistics.</p>
-    </header>
-
-    <div class="controls">
-        <div class="control-group">
-            <label for="yearSelect">Select Year</label>
-            <select id="yearSelect"></select>
-        </div>
-        <div class="control-group">
-            <label for="provinceSelect">Select Province</label>
-            <select id="provinceSelect"></select>
-        </div>
+    <div id="loading">
+        <h2>Loading Data Files...</h2>
+        <p>Please ensure you are running this via a Local Server (e.g., Live Server).</p>
+        <div id="errorText" class="error-msg"></div>
     </div>
 
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h2>Electricity Usage (Units/kWh)</h2>
-            <canvas id="usageChart"></canvas>
+    <div class="container">
+        <h1 style="text-align:center; margin-bottom: 20px;">⚡ Provincial Electricity Dashboard</h1>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="provinceSelect">Select Province:</label>
+                <select id="provinceSelect"></select>
+            </div>
+            <div class="control-group">
+                <label for="yearSelect">Select Year:</label>
+                <select id="yearSelect">
+                    <option value="ALL" style="font-weight:bold;">All Years (Compare)</option>
+                </select>
+            </div>
         </div>
 
-        <div class="chart-card">
-            <h2>Electricity Users (Count)</h2>
-            <canvas id="usersChart"></canvas>
-            <p style="text-align:center; font-size:0.8rem; color:#999; margin-top:10px;">
-                *Note: User count estimated based on usage data for this demo.
-            </p>
+        <div class="grid">
+            <div class="card">
+                <h2>Electricity Usage (kWh)</h2>
+                <div class="chart-box"><canvas id="usageChart"></canvas></div>
+            </div>
+            <div class="card">
+                <h2>Number of Users</h2>
+                <div class="chart-box"><canvas id="usersChart"></canvas></div>
+            </div>
         </div>
     </div>
-</div>
 
 <script>
-    // ---------------------------------------------------------
-    // 1. DATA PROCESSING
-    // ---------------------------------------------------------
+    // --- Configuration ---
+    // Define the column names used in your JSON files here.
+    const USAGE_KEYS = {
+        residential: 'residential_kwh',
+        small_biz: 'small_business_kwh',
+        medium_biz: 'medium_business_kwh',
+        large_biz: 'large_business_kwh',
+        gov: 'government_state_enterprise_kwh' // Add others if needed
+    };
+
+    // Assuming Users JSON uses similar keys (e.g. residential_users). 
+    // Update these if your JSON keys are different.
+    const USER_KEYS = {
+        residential: 'residential_users',
+        small_biz: 'small_business_users',
+        medium_biz: 'medium_business_users',
+        large_biz: 'large_business_users',
+        gov: 'government_state_enterprise_users'
+    };
+
+    const LABELS = ['Residential', 'Small Biz', 'Medium Biz', 'Large Biz', 'Gov/State'];
     
-    // The dataset provided in your prompt. 
-    // Note: The "Users" columns were missing from your snippet, 
-    // so I have added logic to simulate user counts for the visualization.
-    const rawData = [
-        {"year":2566,"province_code":81,"province_name":"Krabi","residential_kwh":363957557,"small_business_kwh":129821570,"medium_business_kwh":168139561,"large_business_kwh":78423092,"specialized_business_kwh":164601159,"public_electricity_kwh":35544051,"government_state_enterprise_kwh":0,"water_pumping_kwh":49262,"temporary_electricity_kwh":9345834,"ev_charging_kwh":88738},
-        {"year":2566,"province_code":10,"province_name":"Bangkok","residential_kwh":11938107549,"small_business_kwh":5769709301,"medium_business_kwh":6065548506,"large_business_kwh":11131271080,"specialized_business_kwh":1931826247,"public_electricity_kwh":342098921,"government_state_enterprise_kwh":137411688,"water_pumping_kwh":0,"temporary_electricity_kwh":280211761,"ev_charging_kwh":61532417},
-        {"year":2566,"province_code":71,"province_name":"Kanchanaburi","residential_kwh":696363922,"small_business_kwh":226495631,"medium_business_kwh":406021652,"large_business_kwh":777616625,"specialized_business_kwh":52838319,"public_electricity_kwh":83034966,"government_state_enterprise_kwh":399831,"water_pumping_kwh":13182391,"temporary_electricity_kwh":10244647,"ev_charging_kwh":264230},
-        {"year":2566,"province_code":46,"province_name":"Kalasin","residential_kwh":411232671,"small_business_kwh":132867140,"medium_business_kwh":150324947,"large_business_kwh":176883682,"specialized_business_kwh":3882449,"public_electricity_kwh":47796594,"government_state_enterprise_kwh":0,"water_pumping_kwh":8496054,"temporary_electricity_kwh":7635844,"ev_charging_kwh":97933},
-        {"year":2566,"province_code":62,"province_name":"Kamphaeng Phet","residential_kwh":429405189,"small_business_kwh":166231505,"medium_business_kwh":146641414,"large_business_kwh":307066569,"specialized_business_kwh":5277314,"public_electricity_kwh":60946130,"government_state_enterprise_kwh":7377,"water_pumping_kwh":15230704,"temporary_electricity_kwh":5705924,"ev_charging_kwh":256568},
-        {"year":2566,"province_code":40,"province_name":"Khon Kaen","residential_kwh":1081642841,"small_business_kwh":356144552,"medium_business_kwh":455998167,"large_business_kwh":718355068,"specialized_business_kwh":66948480,"public_electricity_kwh":88988473,"government_state_enterprise_kwh":903111,"water_pumping_kwh":14369865,"temporary_electricity_kwh":19866797,"ev_charging_kwh":324108},
-        {"year":2566,"province_code":22,"province_name":"Chanthaburi","residential_kwh":681646938,"small_business_kwh":214385124,"medium_business_kwh":274957452,"large_business_kwh":222168984,"specialized_business_kwh":31010450,"public_electricity_kwh":44768982,"government_state_enterprise_kwh":286845,"water_pumping_kwh":4716229,"temporary_electricity_kwh":9029308,"ev_charging_kwh":107468},
-        {"year":2566,"province_code":20,"province_name":"Chonburi","residential_kwh":2681645726,"small_business_kwh":1055134395,"medium_business_kwh":2355556373,"large_business_kwh":7470351463,"specialized_business_kwh":792126440,"public_electricity_kwh":133501700,"government_state_enterprise_kwh":1474372,"water_pumping_kwh":18444,"temporary_electricity_kwh":130432551,"ev_charging_kwh":1008946},
-        {"year":2566,"province_code":50,"province_name":"Chiang Mai","residential_kwh":1527557542,"small_business_kwh":666074424,"medium_business_kwh":659358322,"large_business_kwh":550725352,"specialized_business_kwh":244553338,"public_electricity_kwh":93257258,"government_state_enterprise_kwh":13342866,"water_pumping_kwh":14117188,"temporary_electricity_kwh":36790819,"ev_charging_kwh":1010066},
-        {"year":2566,"province_code":57,"province_name":"Chiang Rai","residential_kwh":660579458,"small_business_kwh":297345652,"medium_business_kwh":240109883,"large_business_kwh":268613575,"specialized_business_kwh":53726145,"public_electricity_kwh":67295873,"government_state_enterprise_kwh":8356418,"water_pumping_kwh":6052823,"temporary_electricity_kwh":14740070,"ev_charging_kwh":563013},
-        {"year":2566,"province_code":83,"province_name":"Phuket","residential_kwh":810870233,"small_business_kwh":395436777,"medium_business_kwh":409618814,"large_business_kwh":361579089,"specialized_business_kwh":872431451,"public_electricity_kwh":40669985,"government_state_enterprise_kwh":865720,"water_pumping_kwh":8035,"temporary_electricity_kwh":43472924,"ev_charging_kwh":353590},
-        {"year":2566,"province_code":30,"province_name":"Nakhon Ratchasima","residential_kwh":1731727683,"small_business_kwh":566325567,"medium_business_kwh":860141328,"large_business_kwh":3006037333,"specialized_business_kwh":103939182,"public_electricity_kwh":117271710,"government_state_enterprise_kwh":2869578,"water_pumping_kwh":6226780,"temporary_electricity_kwh":51466812,"ev_charging_kwh":1083885}
-    ];
-
-    // Define Category keys for mapping
-    const categories = [
-        { key: 'residential_kwh', label: 'Residential' },
-        { key: 'small_business_kwh', label: 'Small Biz' },
-        { key: 'medium_business_kwh', label: 'Medium Biz' },
-        { key: 'large_business_kwh', label: 'Large Biz' },
-        { key: 'government_state_enterprise_kwh', label: 'Gov/State' },
-        { key: 'ev_charging_kwh', label: 'EV Charging' }
-    ];
-
-    // ---------------------------------------------------------
-    // 2. INITIALIZATION
-    // ---------------------------------------------------------
-
-    const yearSelect = document.getElementById('yearSelect');
-    const provinceSelect = document.getElementById('provinceSelect');
+    // Global Data Storage
+    let usageData = [];
+    let usersData = [];
     
-    // Initialize Dropdowns
-    function initDropdowns() {
-        // Get Unique Years and Provinces
-        const years = [...new Set(rawData.map(d => d.year))].sort();
-        const provinces = [...new Set(rawData.map(d => d.province_name))].sort();
+    // Chart Instances
+    let chartUsage = null;
+    let chartUsers = null;
 
-        // Populate Year
-        years.forEach(y => {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            yearSelect.appendChild(opt);
-        });
+    // --- 1. Fetch Data ---
+    async function loadData() {
+        try {
+            // Load both files in parallel
+            const [usageRes, usersRes] = await Promise.all([
+                fetch('electricity_usages_en.json'),
+                fetch('electricity_users_en.json')
+            ]);
 
-        // Populate Province
+            if (!usageRes.ok || !usersRes.ok) throw new Error("File not found (404)");
+
+            usageData = await usageRes.json();
+            usersData = await usersRes.json();
+
+            // Hide loading screen
+            document.getElementById('loading').style.display = 'none';
+            
+            // Initialize App
+            initDashboard();
+
+        } catch (error) {
+            console.error(error);
+            const errDiv = document.getElementById('errorText');
+            errDiv.style.display = 'block';
+            errDiv.innerHTML = `
+                <strong>Error loading data:</strong> ${error.message}<br><br>
+                <em>Note: If you opened this file directly, browsers block reading local JSON files.<br>
+                Please use "Live Server" in VS Code or "python -m http.server".</em>
+            `;
+        }
+    }
+
+    // --- 2. Initialize Controls ---
+    function initDashboard() {
+        // Extract Unique Provinces (sorted)
+        const provinces = [...new Set(usageData.map(d => d.province_name))].sort();
+        
+        // Extract Unique Years (sorted newest first)
+        const years = [...new Set(usageData.map(d => d.year))].sort((a,b) => b - a);
+
+        // Populate Province Dropdown
+        const provinceSelect = document.getElementById('provinceSelect');
         provinces.forEach(p => {
             const opt = document.createElement('option');
-            opt.value = p;
-            opt.textContent = p;
+            opt.value = p; opt.textContent = p;
             provinceSelect.appendChild(opt);
         });
 
-        // Select first province by default if available
-        if(provinces.length > 0) provinceSelect.value = provinces[0];
+        // Populate Year Dropdown
+        const yearSelect = document.getElementById('yearSelect');
+        years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y; opt.textContent = y;
+            yearSelect.appendChild(opt);
+        });
+
+        // Add Listeners
+        provinceSelect.addEventListener('change', updateCharts);
+        yearSelect.addEventListener('change', updateCharts);
+
+        // Initial Render
+        updateCharts();
     }
 
-    // ---------------------------------------------------------
-    // 3. CHART LOGIC
-    // ---------------------------------------------------------
-    let usageChartInstance = null;
-    let usersChartInstance = null;
+    // --- 3. Update Charts ---
+    function updateCharts() {
+        const selectedProvince = document.getElementById('provinceSelect').value;
+        const selectedYear = document.getElementById('yearSelect').value;
 
-    function renderCharts() {
-        const selectedYear = parseInt(yearSelect.value);
-        const selectedProvince = provinceSelect.value;
-
-        // Filter Data
-        const record = rawData.find(d => d.year === selectedYear && d.province_name === selectedProvince);
-
-        if (!record) {
-            console.warn("No data found for selection");
-            return;
+        // Filter Logic
+        let yearsToShow = [];
+        if (selectedYear === 'ALL') {
+            yearsToShow = [...new Set(usageData.map(d => d.year))].sort((a,b) => a - b);
+        } else {
+            yearsToShow = [parseInt(selectedYear)];
         }
 
-        // Prepare Data Arrays
-        const labels = categories.map(c => c.label);
-        const usageData = categories.map(c => record[c.key]);
-        
-        // Mock User Data (Randomly generated for demo purposes since missing in source)
-        // In a real scenario, you would map `residential_users`, etc.
-        const usersData = usageData.map(val => Math.round(val / (Math.random() * 500 + 100))); 
+        // Prepare Datasets
+        const datasetsUsage = [];
+        const datasetsUsers = [];
 
-        // 1. Update/Create Usage Chart
-        const ctxUsage = document.getElementById('usageChart').getContext('2d');
-        if (usageChartInstance) usageChartInstance.destroy();
-        
-        usageChartInstance = new Chart(ctxUsage, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Usage (Units)',
-                    data: usageData,
-                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                    borderColor: 'rgba(52, 152, 219, 1)',
+        const colors = ['#3498db', '#e67e22', '#2ecc71', '#9b59b6', '#f1c40f']; // Colors for years
+
+        yearsToShow.forEach((year, index) => {
+            const color = colors[index % colors.length];
+
+            // 1. Get Usage Data Row
+            const uRow = usageData.find(d => d.year === year && d.province_name === selectedProvince);
+            if (uRow) {
+                const data = [
+                    uRow[USAGE_KEYS.residential] || 0,
+                    uRow[USAGE_KEYS.small_biz] || 0,
+                    uRow[USAGE_KEYS.medium_biz] || 0,
+                    uRow[USAGE_KEYS.large_biz] || 0,
+                    uRow[USAGE_KEYS.gov] || 0
+                ];
+                datasetsUsage.push({
+                    label: `Year ${year}`,
+                    data: data,
+                    backgroundColor: color,
+                    borderColor: 'rgba(0,0,0,0.1)',
                     borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Electricity Usage (kWh)' } }
-                }
+                });
+            }
+
+            // 2. Get Users Data Row
+            const userRow = usersData.find(d => d.year === year && d.province_name === selectedProvince);
+            if (userRow) {
+                const data = [
+                    userRow[USER_KEYS.residential] || 0,
+                    userRow[USER_KEYS.small_biz] || 0,
+                    userRow[USER_KEYS.medium_biz] || 0,
+                    userRow[USER_KEYS.large_biz] || 0,
+                    userRow[USER_KEYS.gov] || 0
+                ];
+                datasetsUsers.push({
+                    label: `Year ${year}`,
+                    data: data,
+                    backgroundColor: color,
+                    borderColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 1
+                });
             }
         });
 
-        // 2. Update/Create Users Chart
-        const ctxUsers = document.getElementById('usersChart').getContext('2d');
-        if (usersChartInstance) usersChartInstance.destroy();
-
-        usersChartInstance = new Chart(ctxUsers, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Number of Users',
-                    data: usersData,
-                    backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                    borderColor: 'rgba(231, 76, 60, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Number of Users' } }
-                }
-            }
-        });
+        // Render
+        renderChart('usageChart', chartUsage, datasetsUsage, 'Electricity Usage (kWh)', c => chartUsage = c);
+        renderChart('usersChart', chartUsers, datasetsUsers, 'Number of Users', c => chartUsers = c);
     }
 
-    // ---------------------------------------------------------
-    // 4. EVENT LISTENERS
-    // ---------------------------------------------------------
-    
-    initDropdowns();
-    renderCharts(); // Initial render
+    // Generic Render Function
+    function renderChart(canvasId, chartInstance, datasets, title, setInstance) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (chartInstance) chartInstance.destroy();
 
-    yearSelect.addEventListener('change', renderCharts);
-    provinceSelect.addEventListener('change', renderCharts);
+        const newChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: LABELS,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: title } }
+                }
+            }
+        });
+        setInstance(newChart);
+    }
+
+    // Start
+    loadData();
 
 </script>
-
 </body>
 </html>
