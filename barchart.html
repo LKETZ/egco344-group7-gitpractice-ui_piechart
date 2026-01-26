@@ -3,262 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electricity Data Dashboard</title>
+    <title>Electricity Bar Charts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        
-        /* Controls */
-        .controls {
-            background: white; padding: 25px; border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px;
-            display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
-        }
-        .control-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-weight: bold; font-size: 0.9rem; color: var(--primary); }
-        select { padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-width: 200px; }
-        
-        /* Charts */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #555; margin-bottom: 15px; font-size: 1.1rem; }
-        .chart-box { position: relative; height: 350px; }
-        
-        /* Loading Overlay */
-        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:999; display:flex; justify-content:center; align-items:center; flex-direction: column; }
-        .error-msg { color: red; max-width: 600px; text-align: center; margin-top: 20px; display: none; }
-
-        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.5rem; }
+        .filter-section { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.5rem; }
     </style>
 </head>
-<body>
-
-    <div id="loading">
-        <h2>Loading Data Files...</h2>
-        <p>Please ensure you are running this via a Local Server (e.g., Live Server).</p>
-        <div id="errorText" class="error-msg"></div>
-    </div>
-
-    <div class="container">
-        <h1 style="text-align:center; margin-bottom: 20px;">⚡ Provincial Electricity Dashboard</h1>
-
-        <div class="controls">
-            <div class="control-group">
-                <label for="provinceSelect">Select Province:</label>
-                <select id="provinceSelect"></select>
+<body class="p-6 md:p-10">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-bold text-[#1e293b] mb-2">Electricity Bar Charts</h1>
+                <p class="text-slate-500">Usage and User Analysis by Category and Province</p>
             </div>
-            <div class="control-group">
-                <label for="yearSelect">Select Year:</label>
-                <select id="yearSelect">
-                    <option value="ALL" style="font-weight:bold;">All Years (Compare)</option>
-                </select>
+            <a href="index.html" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Back to Dashboard</a>
+        </div>
+
+        <!-- Unified Filters -->
+        <div class="filter-section">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Select Year</label>
+                    <select id="yearFilter" class="w-full border rounded-lg px-4 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500 border-slate-300">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Select Province</label>
+                    <select id="provinceFilter" class="w-full border rounded-lg px-4 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500 border-slate-300">
+                    </select>
+                </div>
             </div>
         </div>
 
-        <div class="grid">
+        <!-- ==================== ELECTRICITY USAGE CHART ==================== -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Electricity Usage by Category</h2>
+
+            <!-- Chart Container -->
             <div class="card">
-                <h2>Electricity Usage (kWh)</h2>
-                <div class="chart-box"><canvas id="usageChart"></canvas></div>
+                <canvas id="usageChart" height="100"></canvas>
             </div>
+        </div>
+
+        <!-- ==================== ELECTRICITY USERS CHART ==================== -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Electricity Users by Category</h2>
+
+            <!-- Chart Container -->
             <div class="card">
-                <h2>Number of Users</h2>
-                <div class="chart-box"><canvas id="usersChart"></canvas></div>
+                <canvas id="usersChart" height="100"></canvas>
             </div>
         </div>
     </div>
 
-<script>
-    // --- Configuration ---
-    // Define the column names used in your JSON files here.
-    const USAGE_KEYS = {
-        residential: 'residential_kwh',
-        small_biz: 'small_business_kwh',
-        medium_biz: 'medium_business_kwh',
-        large_biz: 'large_business_kwh',
-        gov: 'government_state_enterprise_kwh' // Add others if needed
-    };
+    <script>
+        let usageData = [];
+        let usersData = [];
+        let usageChart = null;
+        let usersChart = null;
 
-    // Assuming Users JSON uses similar keys (e.g. residential_users). 
-    // Update these if your JSON keys are different.
-    const USER_KEYS = {
-        residential: 'residential_users',
-        small_biz: 'small_business_users',
-        medium_biz: 'medium_business_users',
-        large_biz: 'large_business_users',
-        gov: 'government_state_enterprise_users'
-    };
+        const categoryLabels = {
+            'residential_kwh': 'Residential',
+            'small_business_kwh': 'Small Business',
+            'medium_business_kwh': 'Medium Business',
+            'large_business_kwh': 'Large Business',
+            'specialized_business_kwh': 'Specialized Business',
+            'backup_power_kwh': 'Backup Power',
+            'interruptible_rate_kwh': 'Interruptible Rate',
+            'public_electricity_kwh': 'Public Electricity',
+            'government_state_enterprise_kwh': 'Government/State Enterprise',
+            'water_pumping_kwh': 'Water Pumping',
+            'temporary_electricity_kwh': 'Temporary Electricity',
+            'ev_charging_kwh': 'EV Charging'
+        };
 
-    const LABELS = ['Residential', 'Small Biz', 'Medium Biz', 'Large Biz', 'Gov/State'];
-    
-    // Global Data Storage
-    let usageData = [];
-    let usersData = [];
-    
-    // Chart Instances
-    let chartUsage = null;
-    let chartUsers = null;
+        const usersCategoryLabels = {
+            'residential_count': 'Residential',
+            'small_business_count': 'Small Business',
+            'medium_business_count': 'Medium Business',
+            'large_business_count': 'Large Business',
+            'specialized_business_count': 'Specialized Business',
+            'backup_power_count': 'Backup Power',
+            'interruptible_rate_count': 'Interruptible Rate',
+            'public_electricity_count': 'Public Electricity',
+            'government_state_enterprise_count': 'Government/State Enterprise',
+            'water_pumping_count': 'Water Pumping',
+            'temporary_electricity_count': 'Temporary Electricity',
+            'ev_charging_count': 'EV Charging'
+        };
 
-    // --- 1. Fetch Data ---
-    async function loadData() {
-        try {
-            // Load both files in parallel
-            const [usageRes, usersRes] = await Promise.all([
-                fetch('electricity_usages_en.json'),
-                fetch('electricity_users_en.json')
-            ]);
+        const colors = [
+            '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
+            '#06b6d4', '#6366f1', '#f97316', '#14b8a6', '#a855f7',
+            '#d946ef', '#0ea5e9'
+        ];
 
-            if (!usageRes.ok || !usersRes.ok) throw new Error("File not found (404)");
+        async function loadData() {
+            try {
+                // Load electricity usage data
+                const usageRes = await fetch('electricity_usages_en.json');
+                const usageRaw = await usageRes.json();
+                usageData = Array.isArray(usageRaw) ? usageRaw[0].Sheet1 : usageRaw;
 
-            usageData = await usageRes.json();
-            usersData = await usersRes.json();
+                // Load electricity users data
+                const usersRes = await fetch('electricity_users_en.json');
+                usersData = await usersRes.json();
 
-            // Hide loading screen
-            document.getElementById('loading').style.display = 'none';
-            
-            // Initialize App
-            initDashboard();
-
-        } catch (error) {
-            console.error(error);
-            const errDiv = document.getElementById('errorText');
-            errDiv.style.display = 'block';
-            errDiv.innerHTML = `
-                <strong>Error loading data:</strong> ${error.message}<br><br>
-                <em>Note: If you opened this file directly, browsers block reading local JSON files.<br>
-                Please use "Live Server" in VS Code or "python -m http.server".</em>
-            `;
-        }
-    }
-
-    // --- 2. Initialize Controls ---
-    function initDashboard() {
-        // Extract Unique Provinces (sorted)
-        const provinces = [...new Set(usageData.map(d => d.province_name))].sort();
-        
-        // Extract Unique Years (sorted newest first)
-        const years = [...new Set(usageData.map(d => d.year))].sort((a,b) => b - a);
-
-        // Populate Province Dropdown
-        const provinceSelect = document.getElementById('provinceSelect');
-        provinces.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p; opt.textContent = p;
-            provinceSelect.appendChild(opt);
-        });
-
-        // Populate Year Dropdown
-        const yearSelect = document.getElementById('yearSelect');
-        years.forEach(y => {
-            const opt = document.createElement('option');
-            opt.value = y; opt.textContent = y;
-            yearSelect.appendChild(opt);
-        });
-
-        // Add Listeners
-        provinceSelect.addEventListener('change', updateCharts);
-        yearSelect.addEventListener('change', updateCharts);
-
-        // Initial Render
-        updateCharts();
-    }
-
-    // --- 3. Update Charts ---
-    function updateCharts() {
-        const selectedProvince = document.getElementById('provinceSelect').value;
-        const selectedYear = document.getElementById('yearSelect').value;
-
-        // Filter Logic
-        let yearsToShow = [];
-        if (selectedYear === 'ALL') {
-            yearsToShow = [...new Set(usageData.map(d => d.year))].sort((a,b) => a - b);
-        } else {
-            yearsToShow = [parseInt(selectedYear)];
-        }
-
-        // Prepare Datasets
-        const datasetsUsage = [];
-        const datasetsUsers = [];
-
-        const colors = ['#3498db', '#e67e22', '#2ecc71', '#9b59b6', '#f1c40f']; // Colors for years
-
-        yearsToShow.forEach((year, index) => {
-            const color = colors[index % colors.length];
-
-            // 1. Get Usage Data Row
-            const uRow = usageData.find(d => d.year === year && d.province_name === selectedProvince);
-            if (uRow) {
-                const data = [
-                    uRow[USAGE_KEYS.residential] || 0,
-                    uRow[USAGE_KEYS.small_biz] || 0,
-                    uRow[USAGE_KEYS.medium_biz] || 0,
-                    uRow[USAGE_KEYS.large_biz] || 0,
-                    uRow[USAGE_KEYS.gov] || 0
-                ];
-                datasetsUsage.push({
-                    label: `Year ${year}`,
-                    data: data,
-                    backgroundColor: color,
-                    borderColor: 'rgba(0,0,0,0.1)',
-                    borderWidth: 1
+                // Populate province filters
+                const provinces = [...new Set(usageData.map(d => d.province_name))].sort();
+                const provinceSelect = document.getElementById('provinceFilter');
+                
+                provinces.forEach(province => {
+                    const option = document.createElement('option');
+                    option.value = province;
+                    option.textContent = province;
+                    provinceSelect.appendChild(option);
                 });
-            }
 
-            // 2. Get Users Data Row
-            const userRow = usersData.find(d => d.year === year && d.province_name === selectedProvince);
-            if (userRow) {
-                const data = [
-                    userRow[USER_KEYS.residential] || 0,
-                    userRow[USER_KEYS.small_biz] || 0,
-                    userRow[USER_KEYS.medium_biz] || 0,
-                    userRow[USER_KEYS.large_biz] || 0,
-                    userRow[USER_KEYS.gov] || 0
-                ];
-                datasetsUsers.push({
-                    label: `Year ${year}`,
-                    data: data,
-                    backgroundColor: color,
-                    borderColor: 'rgba(0,0,0,0.1)',
-                    borderWidth: 1
-                });
-            }
-        });
-
-        // Render
-        renderChart('usageChart', chartUsage, datasetsUsage, 'Electricity Usage (kWh)', c => chartUsage = c);
-        renderChart('usersChart', chartUsers, datasetsUsers, 'Number of Users', c => chartUsers = c);
-    }
-
-    // Generic Render Function
-    function renderChart(canvasId, chartInstance, datasets, title, setInstance) {
-        const ctx = document.getElementById(canvasId).getContext('2d');
-        if (chartInstance) chartInstance.destroy();
-
-        const newChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: LABELS,
-                datasets: datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: true },
-                    tooltip: { mode: 'index', intersect: false }
-                },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: title } }
+                // Set first province as default
+                if (provinces.length > 0) {
+                    provinceSelect.value = provinces[0];
                 }
+
+                // Populate year filter
+                const years = [...new Set(usageData.map(d => d.year))].sort((a, b) => a - b);
+                const yearSelect = document.getElementById('yearFilter');
+                
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearSelect.appendChild(option);
+                });
+
+                // Set first year as default
+                if (years.length > 0) {
+                    yearSelect.value = years[0];
+                }
+
+                // Initialize charts
+                updateUsageChart();
+                updateUsersChart();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Error loading data. Please check the JSON files.');
             }
-        });
-        setInstance(newChart);
-    }
+        }
 
-    // Start
-    loadData();
+        function updateAllCharts() {
+            updateUsageChart();
+            updateUsersChart();
+        }
 
-</script>
+        function updateUsageChart() {
+            const selectedYear = document.getElementById('yearFilter').value;
+            const selectedProvince = document.getElementById('provinceFilter').value;
+            const chartType = 'bar';
+
+            // Filter data
+            let filteredData = usageData.filter(d => d.year == selectedYear);
+            if (selectedProvince) {
+                filteredData = filteredData.filter(d => d.province_name === selectedProvince);
+            }
+
+            if (filteredData.length === 0) {
+                alert('No data available for selected filters.');
+                return;
+            }
+
+            // Prepare chart data
+            const labels = Object.values(categoryLabels);
+            const datasets = filteredData.map((province, index) => {
+                const data = Object.keys(categoryLabels).map(key => province[key] || 0);
+                return {
+                    label: province.province_name,
+                    data: data,
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 1,
+                    tension: 0.4
+                };
+            });
+
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            
+            if (usageChart) {
+                usageChart.destroy();
+            }
+
+            usageChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: selectedProvince ? `${selectedProvince} - Electricity Usage by Category (${selectedYear})` : `All Provinces - Electricity Usage by Category (${selectedYear})`,
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: { font: { size: 12 }, usePointStyle: true }
+                        }
+                    },
+                    scales: chartType !== 'radar' ? {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                callback: function(value) { 
+                                    if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                                    if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                                    return value;
+                                }
+                            },
+                            title: { display: true, text: 'Energy (kWh)' }
+                        },
+                        x: {
+                            ticks: { font: { size: 11 } }
+                        }
+                    } : {}
+                }
+            });
+        }
+
+        function updateUsersChart() {
+            const selectedYear = document.getElementById('yearFilter').value;
+            const selectedProvince = document.getElementById('provinceFilter').value;
+            const chartType = 'bar';
+
+            // Filter data
+            let filteredData = usersData.filter(d => d.year == selectedYear);
+            if (selectedProvince) {
+                filteredData = filteredData.filter(d => d.province_name === selectedProvince);
+            }
+
+            if (filteredData.length === 0) {
+                alert('No data available for selected filters.');
+                return;
+            }
+
+            // Prepare chart data
+            const labels = Object.values(usersCategoryLabels);
+            const datasets = filteredData.map((province, index) => {
+                const data = Object.keys(usersCategoryLabels).map(key => province[key] || 0);
+                return {
+                    label: province.province_name,
+                    data: data,
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 1,
+                    tension: 0.4
+                };
+            });
+
+            const ctx = document.getElementById('usersChart').getContext('2d');
+            
+            if (usersChart) {
+                usersChart.destroy();
+            }
+
+            usersChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: selectedProvince ? `${selectedProvince} - Electricity Users by Category (${selectedYear})` : `All Provinces - Electricity Users by Category (${selectedYear})`,
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: { font: { size: 12 }, usePointStyle: true }
+                        }
+                    },
+                    scales: chartType !== 'radar' ? {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                callback: function(value) { 
+                                    return value.toLocaleString();
+                                }
+                            },
+                            title: { display: true, text: 'Number of Users' }
+                        },
+                        x: {
+                            ticks: { font: { size: 11 } }
+                        }
+                    } : {}
+                }
+            });
+        }
+
+        // Add event listeners for real-time updates
+        document.getElementById('yearFilter').addEventListener('change', updateAllCharts);
+        document.getElementById('provinceFilter').addEventListener('change', updateAllCharts);
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
 </body>
 </html>
