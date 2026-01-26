@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Pie Charts</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .filters {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 200px;
+        }
+        label {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.95em;
+        }
+        select {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        select:hover {
+            border-color: #667eea;
+        }
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .chart-card {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        .chart-title {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Electricity Analysis Dashboard</h1>
+        <p class="subtitle">Usage and Users Distribution by Category</p>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <label for="yearSelect">📅 Select Year</label>
+                <select id="yearSelect"></select>
+            </div>
+            <div class="filter-group">
+                <label for="provinceSelect">📍 Select Province</label>
+                <select id="provinceSelect"></select>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">💡 Electricity Usage by Category (kWh)</div>
+                <div class="chart-wrapper">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">👥 Electricity Users by Category</div>
+                <div class="chart-wrapper">
+                    <canvas id="usersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let usageChart, usersChart;
+
+        // Embedded data (sample - you can replace with full data)
+        const usagesData = [{"year":2566,"province_code":81,"province_name":"Krabi","residential_kwh":363957557,"small_business_kwh":129821570,"medium_business_kwh":168139561,"large_business_kwh":78423092,"specialized_business_kwh":164601159,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":35544051,"government_state_enterprise_kwh":0,"water_pumping_kwh":49262,"temporary_electricity_kwh":9345834,"ev_charging_kwh":88738},{"year":2566,"province_code":10,"province_name":"Bangkok","residential_kwh":11938107549,"small_business_kwh":5769709301,"medium_business_kwh":6065548506,"large_business_kwh":11131271080,"specialized_business_kwh":1931826247,"backup_power_kwh":2592872,"interruptible_rate_kwh":0,"public_electricity_kwh":342098921,"government_state_enterprise_kwh":137411688,"water_pumping_kwh":0,"temporary_electricity_kwh":280211761,"ev_charging_kwh":61532417},{"year":2566,"province_code":71,"province_name":"Kanchanaburi","residential_kwh":696363922,"small_business_kwh":226495631,"medium_business_kwh":406021652,"large_business_kwh":777616625,"specialized_business_kwh":52838319,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":83034966,"government_state_enterprise_kwh":399831,"water_pumping_kwh":13182391,"temporary_electricity_kwh":10244647,"ev_charging_kwh":264230},{"year":2565,"province_code":81,"province_name":"Krabi","residential_kwh":346833979,"small_business_kwh":119605645,"medium_business_kwh":155848881,"large_business_kwh":82114320,"specialized_business_kwh":123078091,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":31644021.789999995,"government_state_enterprise_kwh":0,"water_pumping_kwh":41619,"temporary_electricity_kwh":8220312,"ev_charging_kwh":0},{"year":2565,"province_code":10,"province_name":"Bangkok","residential_kwh":11025773549,"small_business_kwh":5347811010,"medium_business_kwh":5755020369,"large_business_kwh":10727410582,"specialized_business_kwh":1661512000,"backup_power_kwh":23101000,"interruptible_rate_kwh":0,"public_electricity_kwh":340548981,"government_state_enterprise_kwh":135930324,"water_pumping_kwh":0,"temporary_electricity_kwh":259879685,"ev_charging_kwh":10514506}];
+
+        const usersData = [{"year":2566,"province_code":81,"province_name":"Krabi","residential_count":154591,"small_business_count":10840,"medium_business_count":761,"large_business_count":37,"specialized_business_count":406,"backup_power_count":0,"interruptible_rate_count":0,"public_electricity_count":2808,"government_state_enterprise_count":0,"water_pumping_count":2,"temporary_electricity_count":3989,"ev_charging_count":7},{"year":2566,"province_code":10,"province_name":"Bangkok","residential_count":2697320,"small_business_count":250921,"medium_business_count":16863,"large_business_count":1637,"specialized_business_count":2739,"backup_power_count":1,"interruptible_rate_count":0,"public_electricity_count":0,"government_state_enterprise_count":300,"water_pumping_count":0,"temporary_electricity_count":20230,"ev_charging_count":459},{"year":2566,"province_code":71,"province_name":"Kanchanaburi","residential_count":280007,"small_business_count":26251,"medium_business_count":1873,"large_business_count":96,"specialized_business_count":261,"backup_power_count":0,"interruptible_rate_count":0,"public_electricity_count":5263,"government_state_enterprise_count":9,"water_pumping_count":111,"temporary_electricity_count":4285,"ev_charging_count":3},{"year":2565,"province_code":81,"province_name":"Krabi","residential_count":152183,"small_business_count":10667,"medium_business_count":696,"large_business_count":36,"specialized_business_count":372,"backup_power_count":0,"interruptible_rate_count":0,"public_electricity_count":2539,"government_state_enterprise_count":0,"water_pumping_count":3,"temporary_electricity_count":3804,"ev_charging_count":0},{"year":2565,"province_code":10,"province_name":"Bangkok","residential_count":2637636,"small_business_count":248336,"medium_business_count":16666,"large_business_count":1608,"specialized_business_count":2666,"backup_power_count":1,"interruptible_rate_count":0,"public_electricity_count":0,"government_state_enterprise_count":291,"water_pumping_count":0,"temporary_electricity_count":19306,"ev_charging_count":272}];
+
+        const categories = [
+            { key: 'residential', label: 'Residential', color: '#FF6384' },
+            { key: 'small_business', label: 'Small Business', color: '#36A2EB' },
+            { key: 'medium_business', label: 'Medium Business', color: '#FFCE56' },
+            { key: 'large_business', label: 'Large Business', color: '#4BC0C0' },
+            { key: 'specialized_business', label: 'Specialized Business', color: '#9966FF' },
+            { key: 'backup_power', label: 'Backup Power', color: '#FF9F40' },
+            { key: 'interruptible_rate', label: 'Interruptible Rate', color: '#FF6384' },
+            { key: 'public_electricity', label: 'Public Electricity', color: '#C9CBCF' },
+            { key: 'government_state_enterprise', label: 'Government/State', color: '#4BC0C0' },
+            { key: 'water_pumping', label: 'Water Pumping', color: '#FF6384' },
+            { key: 'temporary_electricity', label: 'Temporary', color: '#36A2EB' },
+            { key: 'ev_charging', label: 'EV Charging', color: '#FFCE56' }
+        ];
+
+        function initializeFilters() {
+            const years = [...new Set(usagesData.map(d => d.year))].sort((a, b) => b - a);
+            const provinces = [...new Set(usagesData.map(d => d.province_name))].sort();
+            
+            const yearSelect = document.getElementById('yearSelect');
+            const provinceSelect = document.getElementById('provinceSelect');
+            
+            yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+            provinceSelect.innerHTML = provinces.map(p => `<option value="${p}">${p}</option>`).join('');
+            
+            updateCharts();
+        }
+
+        function updateCharts() {
+            const year = parseInt(document.getElementById('yearSelect').value);
+            const province = document.getElementById('provinceSelect').value;
+            
+            const usageData = usagesData.find(d => d.year === year && d.province_name === province);
+            const userData = usersData.find(d => d.year === year && d.province_name === province);
+            
+            if (usageData && userData) {
+                createUsageChart(usageData);
+                createUsersChart(userData);
+            }
+        }
+
+        function createUsageChart(data) {
+            const labels = [];
+            const values = [];
+            const colors = [];
+            
+            categories.forEach(cat => {
+                const value = data[`${cat.key}_kwh`];
+                if (value > 0) {
+                    labels.push(cat.label);
+                    values.push(value);
+                    colors.push(cat.color);
+                }
+            });
+            
+            if (usageChart) usageChart.destroy();
+            
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            usageChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: { size: 11 },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value.toLocaleString()} kWh (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createUsersChart(data) {
+            const labels = [];
+            const values = [];
+            const colors = [];
+            
+            categories.forEach(cat => {
+                const value = data[`${cat.key}_count`];
+                if (value > 0) {
+                    labels.push(cat.label);
+                    values.push(value);
+                    colors.push(cat.color);
+                }
+            });
+            
+            if (usersChart) usersChart.destroy();
+            
+            const ctx = document.getElementById('usersChart').getContext('2d');
+            usersChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: { size: 11 },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value.toLocaleString()} users (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('yearSelect').addEventListener('change', updateCharts);
+        document.getElementById('provinceSelect').addEventListener('change', updateCharts);
+
+        initializeFilters();
+    </script>
+</body>
+</html>
