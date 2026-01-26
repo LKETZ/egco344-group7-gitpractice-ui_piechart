@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electricity Pie Charts</title>
+    <title>Electricity Analysis - Pie Charts</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -17,8 +17,27 @@
             min-height: 100vh;
             padding: 20px;
         }
+        .back-button-container {
+            margin-bottom: 20px;
+        }
+        .back-button {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(-5px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
@@ -101,6 +120,16 @@
             position: relative;
             height: 400px;
         }
+        .loading {
+            text-align: center;
+            color: #718096;
+            font-style: italic;
+        }
+        .error {
+            text-align: center;
+            color: #e53e3e;
+            font-weight: 500;
+        }
         @media (max-width: 768px) {
             .charts-grid {
                 grid-template-columns: 1fr;
@@ -108,13 +137,19 @@
             h1 {
                 font-size: 1.8em;
             }
+            .container {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="back-button-container">
+            <a href="index.html" class="back-button">← Back to Dashboard</a>
+        </div>
         <h1>⚡ Electricity Analysis Dashboard</h1>
-        <p class="subtitle">Usage and Users Distribution by Category</p>
+        <p class="subtitle">Pie Charts - Usage and Users Distribution by Category</p>
         
         <div class="filters">
             <div class="filter-group">
@@ -140,16 +175,28 @@
                     <canvas id="usersChart"></canvas>
                 </div>
             </div>
+            <div class="chart-card">
+                <div class="chart-title">📊 Usage Distribution (Top Categories)</div>
+                <div class="chart-wrapper">
+                    <canvas id="usagePercentageChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">🔌 Users Distribution (Top Categories)</div>
+                <div class="chart-wrapper">
+                    <canvas id="usersPercentageChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        let usageChart, usersChart;
-
-        // Embedded data (sample - you can replace with full data)
-        const usagesData = [{"year":2566,"province_code":81,"province_name":"Krabi","residential_kwh":363957557,"small_business_kwh":129821570,"medium_business_kwh":168139561,"large_business_kwh":78423092,"specialized_business_kwh":164601159,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":35544051,"government_state_enterprise_kwh":0,"water_pumping_kwh":49262,"temporary_electricity_kwh":9345834,"ev_charging_kwh":88738},{"year":2566,"province_code":10,"province_name":"Bangkok","residential_kwh":11938107549,"small_business_kwh":5769709301,"medium_business_kwh":6065548506,"large_business_kwh":11131271080,"specialized_business_kwh":1931826247,"backup_power_kwh":2592872,"interruptible_rate_kwh":0,"public_electricity_kwh":342098921,"government_state_enterprise_kwh":137411688,"water_pumping_kwh":0,"temporary_electricity_kwh":280211761,"ev_charging_kwh":61532417},{"year":2566,"province_code":71,"province_name":"Kanchanaburi","residential_kwh":696363922,"small_business_kwh":226495631,"medium_business_kwh":406021652,"large_business_kwh":777616625,"specialized_business_kwh":52838319,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":83034966,"government_state_enterprise_kwh":399831,"water_pumping_kwh":13182391,"temporary_electricity_kwh":10244647,"ev_charging_kwh":264230},{"year":2565,"province_code":81,"province_name":"Krabi","residential_kwh":346833979,"small_business_kwh":119605645,"medium_business_kwh":155848881,"large_business_kwh":82114320,"specialized_business_kwh":123078091,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":31644021.789999995,"government_state_enterprise_kwh":0,"water_pumping_kwh":41619,"temporary_electricity_kwh":8220312,"ev_charging_kwh":0},{"year":2565,"province_code":10,"province_name":"Bangkok","residential_kwh":11025773549,"small_business_kwh":5347811010,"medium_business_kwh":5755020369,"large_business_kwh":10727410582,"specialized_business_kwh":1661512000,"backup_power_kwh":23101000,"interruptible_rate_kwh":0,"public_electricity_kwh":340548981,"government_state_enterprise_kwh":135930324,"water_pumping_kwh":0,"temporary_electricity_kwh":259879685,"ev_charging_kwh":10514506}];
-
-        const usersData = [{"year":2566,"province_code":81,"province_name":"Krabi","residential_count":154591,"small_business_count":10840,"medium_business_count":761,"large_business_count":37,"specialized_business_count":406,"backup_power_count":0,"interruptible_rate_count":0,"public_electricity_count":2808,"government_state_enterprise_count":0,"water_pumping_count":2,"temporary_electricity_count":3989,"ev_charging_count":7},{"year":2566,"province_code":10,"province_name":"Bangkok","residential_count":2697320,"small_business_count":250921,"medium_business_count":16863,"large_business_count":1637,"specialized_business_count":2739,"backup_power_count":1,"interruptible_rate_count":0,"public_electricity_count":0,"government_state_enterprise_count":300,"water_pumping_count":0,"temporary_electricity_count":20230,"ev_charging_count":459},{"year":2566,"province_code":71,"province_name":"Kanchanaburi","residential_count":280007,"small_business_count":26251,"medium_business_count":1873,"large_business_count":96,"specialized_business_count":261,"backup_power_count":0,"interruptible_rate_count":0,"public_electricity_count":5263,"government_state_enterprise_count":9,"water_pumping_count":111,"temporary_electricity_count":4285,"ev_charging_count":3},{"year":2565,"province_code":81,"province_name":"Krabi","residential_count":152183,"small_business_count":10667,"medium_business_count":696,"large_business_count":36,"specialized_business_count":372,"backup_power_count":0,"interruptible_rate_count":0,"public_electricity_count":2539,"government_state_enterprise_count":0,"water_pumping_count":3,"temporary_electricity_count":3804,"ev_charging_count":0},{"year":2565,"province_code":10,"province_name":"Bangkok","residential_count":2637636,"small_business_count":248336,"medium_business_count":16666,"large_business_count":1608,"specialized_business_count":2666,"backup_power_count":1,"interruptible_rate_count":0,"public_electricity_count":0,"government_state_enterprise_count":291,"water_pumping_count":0,"temporary_electricity_count":19306,"ev_charging_count":272}];
+        let charts = {
+            usage: null,
+            users: null,
+            usagePercentage: null,
+            usersPercentage: null
+        };
 
         const categories = [
             { key: 'residential', label: 'Residential', color: '#FF6384' },
@@ -166,29 +213,68 @@
             { key: 'ev_charging', label: 'EV Charging', color: '#FFCE56' }
         ];
 
+        let usagesData = [];
+        let usersData = [];
+
+        // Load data from JSON files
+        async function loadData() {
+            try {
+                const [usagesRes, usersRes] = await Promise.all([
+                    fetch('electricity_usages_en.json'),
+                    fetch('electricity_users_en.json')
+                ]);
+
+                const usagesJson = await usagesRes.json();
+                const usersJson = await usersRes.json();
+
+                // Handle nested structure in electricity_usages_en.json
+                if (usagesJson[0] && usagesJson[0].Sheet1) {
+                    usagesData = usagesJson[0].Sheet1;
+                } else if (Array.isArray(usagesJson)) {
+                    usagesData = usagesJson;
+                }
+
+                // Handle electricity_users_en.json
+                usersData = Array.isArray(usersJson) ? usersJson : (usersJson[0] && usersJson[0].Sheet1 ? usersJson[0].Sheet1 : []);
+
+                console.log('Usages Data:', usagesData);
+                console.log('Users Data:', usersData);
+
+                initializeFilters();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.querySelector('.charts-grid').innerHTML = '<div class="error">Error loading data. Please check console.</div>';
+            }
+        }
+
         function initializeFilters() {
             const years = [...new Set(usagesData.map(d => d.year))].sort((a, b) => b - a);
             const provinces = [...new Set(usagesData.map(d => d.province_name))].sort();
-            
+
             const yearSelect = document.getElementById('yearSelect');
             const provinceSelect = document.getElementById('provinceSelect');
-            
+
             yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
             provinceSelect.innerHTML = provinces.map(p => `<option value="${p}">${p}</option>`).join('');
-            
+
+            yearSelect.addEventListener('change', updateCharts);
+            provinceSelect.addEventListener('change', updateCharts);
+
             updateCharts();
         }
 
         function updateCharts() {
             const year = parseInt(document.getElementById('yearSelect').value);
             const province = document.getElementById('provinceSelect').value;
-            
+
             const usageData = usagesData.find(d => d.year === year && d.province_name === province);
             const userData = usersData.find(d => d.year === year && d.province_name === province);
-            
+
             if (usageData && userData) {
                 createUsageChart(usageData);
                 createUsersChart(userData);
+                createUsagePercentageChart(usageData);
+                createUsersPercentageChart(userData);
             }
         }
 
@@ -196,7 +282,7 @@
             const labels = [];
             const values = [];
             const colors = [];
-            
+
             categories.forEach(cat => {
                 const value = data[`${cat.key}_kwh`];
                 if (value > 0) {
@@ -205,11 +291,11 @@
                     colors.push(cat.color);
                 }
             });
-            
-            if (usageChart) usageChart.destroy();
-            
+
+            if (charts.usage) charts.usage.destroy();
+
             const ctx = document.getElementById('usageChart').getContext('2d');
-            usageChart = new Chart(ctx, {
+            charts.usage = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: labels,
@@ -239,7 +325,7 @@
                                     const value = context.parsed;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = ((value / total) * 100).toFixed(1);
-                                    return `${label}: ${value.toLocaleString()} kWh (${percentage}%)`;
+                                    return `${label}: ${(value / 1000000).toFixed(2)}M kWh (${percentage}%)`;
                                 }
                             }
                         }
@@ -252,7 +338,7 @@
             const labels = [];
             const values = [];
             const colors = [];
-            
+
             categories.forEach(cat => {
                 const value = data[`${cat.key}_count`];
                 if (value > 0) {
@@ -261,11 +347,11 @@
                     colors.push(cat.color);
                 }
             });
-            
-            if (usersChart) usersChart.destroy();
-            
+
+            if (charts.users) charts.users.destroy();
+
             const ctx = document.getElementById('usersChart').getContext('2d');
-            usersChart = new Chart(ctx, {
+            charts.users = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: labels,
@@ -304,10 +390,130 @@
             });
         }
 
-        document.getElementById('yearSelect').addEventListener('change', updateCharts);
-        document.getElementById('provinceSelect').addEventListener('change', updateCharts);
+        function createUsagePercentageChart(data) {
+            const dataArray = [];
+            categories.forEach(cat => {
+                const value = data[`${cat.key}_kwh`];
+                if (value > 0) {
+                    dataArray.push({ label: cat.label, value: value, color: cat.color });
+                }
+            });
 
-        initializeFilters();
+            // Sort by value and take top 8
+            dataArray.sort((a, b) => b.value - a.value);
+            const topData = dataArray.slice(0, 8);
+
+            // Add "Others" if there are more
+            if (dataArray.length > 8) {
+                const othersValue = dataArray.slice(8).reduce((sum, item) => sum + item.value, 0);
+                topData.push({ label: 'Others', value: othersValue, color: '#E2E8F0' });
+            }
+
+            if (charts.usagePercentage) charts.usagePercentage.destroy();
+
+            const ctx = document.getElementById('usagePercentageChart').getContext('2d');
+            charts.usagePercentage = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: topData.map(d => d.label),
+                    datasets: [{
+                        data: topData.map(d => d.value),
+                        backgroundColor: topData.map(d => d.color),
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: { size: 10 },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${percentage}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createUsersPercentageChart(data) {
+            const dataArray = [];
+            categories.forEach(cat => {
+                const value = data[`${cat.key}_count`];
+                if (value > 0) {
+                    dataArray.push({ label: cat.label, value: value, color: cat.color });
+                }
+            });
+
+            // Sort by value and take top 8
+            dataArray.sort((a, b) => b.value - a.value);
+            const topData = dataArray.slice(0, 8);
+
+            // Add "Others" if there are more
+            if (dataArray.length > 8) {
+                const othersValue = dataArray.slice(8).reduce((sum, item) => sum + item.value, 0);
+                topData.push({ label: 'Others', value: othersValue, color: '#E2E8F0' });
+            }
+
+            if (charts.usersPercentage) charts.usersPercentage.destroy();
+
+            const ctx = document.getElementById('usersPercentageChart').getContext('2d');
+            charts.usersPercentage = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: topData.map(d => d.label),
+                    datasets: [{
+                        data: topData.map(d => d.value),
+                        backgroundColor: topData.map(d => d.color),
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: { size: 10 },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${percentage}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize on page load
+        loadData();
     </script>
 </body>
 </html>
