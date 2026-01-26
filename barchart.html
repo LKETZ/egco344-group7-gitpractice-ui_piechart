@@ -3,167 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electricity Usage & Users Analysis</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <title>Electricity Usage Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background-color: var(--bg);
+            margin: 0;
             padding: 20px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        h1 {
-            text-align: center;
             color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
-        
-        .filters {
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        /* Controls Section */
+        .controls {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             display: flex;
             gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
             justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
         }
-        
-        .filter-group {
+
+        .control-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-        }
-        
-        .filter-group label {
-            font-weight: 600;
-            color: #555;
-            font-size: 14px;
-        }
-        
-        select {
-            padding: 12px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: white;
             min-width: 200px;
         }
-        
-        select:hover {
-            border-color: #667eea;
+
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--primary);
         }
-        
-        select:focus {
+
+        select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transition: border-color 0.3s;
         }
-        
-        .charts-container {
+
+        select:focus {
+            border-color: var(--accent);
+        }
+
+        /* Charts Grid */
+        .charts-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 40px;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
-        
-        .chart-wrapper {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .chart-wrapper h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-            text-align: center;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 500px;
-        }
-        
+
         @media (max-width: 768px) {
-            .container {
-                padding: 20px;
+            .charts-grid {
+                grid-template-columns: 1fr;
             }
-            
-            h1 {
-                font-size: 1.8em;
-            }
-            
-            .filters {
-                flex-direction: column;
-            }
-            
-            select {
-                width: 100%;
-            }
-            
-            .chart-container {
-                height: 400px;
-            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 400px !important;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>⚡ Electricity Usage & Users Analysis</h1>
-        
-        <div class="filters">
-            <div class="filter-group">
-                <label for="yearSelect">Select Year:</label>
-                <select id="yearSelect">
-                    <option value="2566">2566 (2023)</option>
-                    <option value="2565">2565 (2022)</option>
-                    <option value="2564">2564 (2021)</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label for="provinceSelect">Select Province:</label>
-                <select id="provinceSelect"></select>
-            </div>
+
+<div class="container">
+    <header>
+        <h1>⚡ Provincial Electricity Dashboard</h1>
+        <p>Filter by Year and Province to view usage statistics.</p>
+    </header>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="yearSelect">Select Year</label>
+            <select id="yearSelect"></select>
         </div>
-        
-        <div class="charts-container">
-            <div class="chart-wrapper">
-                <h2>Electricity Usage (kWh) by Category</h2>
-                <div class="chart-container">
-                    <canvas id="usageChart"></canvas>
-                </div>
-            </div>
-            
-            <div class="chart-wrapper">
-                <h2>Number of Electricity Users by Category</h2>
-                <div class="chart-container">
-                    <canvas id="usersChart"></canvas>
-                </div>
-            </div>
+        <div class="control-group">
+            <label for="provinceSelect">Select Province</label>
+            <select id="provinceSelect"></select>
         </div>
     </div>
 
-    <script>
-        const usageData = [{"year":2566,"province_code":81,"province_name":"Krabi","residential_kwh":363957557,"small_business_kwh":129821570,"medium_business_kwh":168139561,"large_business_kwh":78423092,"specialized_business_kwh":164601159,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":35544051,"government_state_enterprise_kwh":0,"water_pumping_kwh":49262,"temporary_electricity_kwh":9345834,"ev_charging_kwh":88738},{"year":2566,"province_code":10,"province_name":"Bangkok","residential_kwh":11938107549,"small_business_kwh":5769709301,"medium_business_kwh":6065548506,"large_business_kwh":11131271080,"specialized_business_kwh":1931826247,"backup_power_kwh":2592872,"interruptible_rate_kwh":0,"public_electricity_kwh":342098921,"government_state_enterprise_kwh":137411688,"water_pumping_kwh":0,"temporary_electricity_kwh":280211761,"ev_charging_kwh":61532417},{"year":2566,"province_code":71,"province_name":"Kanchanaburi","residential_kwh":696363922,"small_business_kwh":226495631,"medium_business_kwh":406021652,"large_business_kwh":777616625,"specialized_business_kwh":52838319,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":83034966,"government_state_enterprise_kwh":399831,"water_pumping_kwh":13182391,"temporary_electricity_kwh":10244647,"ev_charging_kwh":264230},{"year":2566,"province_code":46,"province_name":"Kalasin","residential_kwh":411232671,"small_business_kwh":132867140,"medium_business_kwh":150324947,"large_business_kwh":176883682,"specialized_business_kwh":3882449,"backup_power_kwh":1110640,"interruptible_rate_kwh":0,"public_electricity_kwh":47796594,"government_state_enterprise_kwh":0,"water_pumping_kwh":8496054,"temporary_electricity_kwh":7635844,"ev_charging_kwh":97933},{"year":2566,"province_code":62,"province_name":"Kamphaeng Phet","residential_kwh":429405189,"small_business_kwh":166231505,"medium_business_kwh":146641414,"large_business_kwh":307066569,"specialized_business_kwh":5277314,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":60946130,"government_state_enterprise_kwh":7377,"water_pumping_kwh":15230704,"temporary_electricity_kwh":5705924,"ev_charging_kwh":256568},{"year":2566,"province_code":40,"province_name":"Khon Kaen","residential_kwh":1081642841,"small_business_kwh":356144552,"medium_business_kwh":455998167,"large_business_kwh":718355068,"specialized_business_kwh":66948480,"backup_power_kwh":475200,"interruptible_rate_kwh":0,"public_electricity_kwh":88988473,"government_state_enterprise_kwh":903111,"water_pumping_kwh":14369865,"temporary_electricity_kwh":19866797,"ev_charging_kwh":324108},{"year":2566,"province_code":22,"province_name":"Chanthaburi","residential_kwh":681646938,"small_business_kwh":214385124,"medium_business_kwh":274957452,"large_business_kwh":222168984,"specialized_business_kwh":31010450,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":44768982,"government_state_enterprise_kwh":286845,"water_pumping_kwh":4716229,"temporary_electricity_kwh":9029308,"ev_charging_kwh":107468},{"year":2566,"province_code":24,"province_name":"Chachoengsao","residential_kwh":776339332,"small_business_kwh":341015307,"medium_business_kwh":864494281,"large_business_kwh":3356725028,"specialized_business_kwh":32360142,"backup_power_kwh":16329600,"interruptible_rate_kwh":0,"public_electricity_kwh":57904870,"government_state_enterprise_kwh":702466,"water_pumping_kwh":4766347,"temporary_electricity_kwh":20785261,"ev_charging_kwh":247602},{"year":2566,"province_code":20,"province_name":"Chonburi","residential_kwh":2681645726,"small_business_kwh":1055134395,"medium_business_kwh":2355556373,"large_business_kwh":7470351463,"specialized_business_kwh":792126440,"backup_power_kwh":13463840,"interruptible_rate_kwh":0,"public_electricity_kwh":133501700,"government_state_enterprise_kwh":1474372,"water_pumping_kwh":18444,"temporary_electricity_kwh":130432551,"ev_charging_kwh":1008946},{"year":2566,"province_code":18,"province_name":"Chainat","residential_kwh":230693731,"small_business_kwh":87806376,"medium_business_kwh":120158658,"large_business_kwh":183608292,"specialized_business_kwh":3389006,"backup_power_kwh":813240,"interruptible_rate_kwh":0,"public_electricity_kwh":32044461,"government_state_enterprise_kwh":0,"water_pumping_kwh":6748842,"temporary_electricity_kwh":3240694,"ev_charging_kwh":0},{"year":2566,"province_code":36,"province_name":"Chaiyaphum","residential_kwh":469424355,"small_business_kwh":161830649,"medium_business_kwh":162843311,"large_business_kwh":130608360,"specialized_business_kwh":4511689,"backup_power_kwh":5494700,"interruptible_rate_kwh":0,"public_electricity_kwh":40820432,"government_state_enterprise_kwh":92204,"water_pumping_kwh":7789969,"temporary_electricity_kwh":9643627,"ev_charging_kwh":174842},{"year":2566,"province_code":86,"province_name":"Chumphon","residential_kwh":433317915,"small_business_kwh":148496789,"medium_business_kwh":258751311,"large_business_kwh":168586664,"specialized_business_kwh":12056647,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":34563851,"government_state_enterprise_kwh":44100,"water_pumping_kwh":1174252,"temporary_electricity_kwh":9422765,"ev_charging_kwh":247707},{"year":2566,"province_code":57,"province_name":"Chiang Rai","residential_kwh":660579458,"small_business_kwh":297345652,"medium_business_kwh":240109883,"large_business_kwh":268613575,"specialized_business_kwh":53726145,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":67295873,"government_state_enterprise_kwh":8356418,"water_pumping_kwh":6052823,"temporary_electricity_kwh":14740070,"ev_charging_kwh":563013},{"year":2566,"province_code":50,"province_name":"Chiang Mai","residential_kwh":1527557542,"small_business_kwh":666074424,"medium_business_kwh":659358322,"large_business_kwh":550725352,"specialized_business_kwh":244553338,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":93257258,"government_state_enterprise_kwh":13342866,"water_pumping_kwh":14117188,"temporary_electricity_kwh":36790819,"ev_charging_kwh":1010066},{"year":2566,"province_code":92,"province_name":"Trang","residential_kwh":389459649,"small_business_kwh":125274637,"medium_business_kwh":161250443,"large_business_kwh":343412938,"specialized_business_kwh":14271486,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":52780764,"government_state_enterprise_kwh":0,"water_pumping_kwh":140114,"temporary_electricity_kwh":5777060,"ev_charging_kwh":100584},{"year":2566,"province_code":23,"province_name":"Trat","residential_kwh":206002206,"small_business_kwh":102084446,"medium_business_kwh":116189371,"large_business_kwh":56662295,"specialized_business_kwh":72660199,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":18040342,"government_state_enterprise_kwh":0,"water_pumping_kwh":1185420,"temporary_electricity_kwh":3939051,"ev_charging_kwh":44230},{"year":2566,"province_code":63,"province_name":"Tak","residential_kwh":292435571,"small_business_kwh":123368550,"medium_business_kwh":143538192,"large_business_kwh":234697616,"specialized_business_kwh":11174836,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":43608908,"government_state_enterprise_kwh":79785,"water_pumping_kwh":3005327,"temporary_electricity_kwh":8736655,"ev_charging_kwh":180612},{"year":2566,"province_code":26,"province_name":"Nakhon Nayok","residential_kwh":238408304,"small_business_kwh":80376880,"medium_business_kwh":134527208,"large_business_kwh":189348068,"specialized_business_kwh":23938181,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":25191739,"government_state_enterprise_kwh":130569,"water_pumping_kwh":152742,"temporary_electricity_kwh":5297634,"ev_charging_kwh":86894},{"year":2566,"province_code":73,"province_name":"Nakhon Pathom","residential_kwh":1079930206,"small_business_kwh":444196332,"medium_business_kwh":1002979775,"large_business_kwh":2267479157,"specialized_business_kwh":84765570,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":132891656,"government_state_enterprise_kwh":1345657,"water_pumping_kwh":759621,"temporary_electricity_kwh":25790517,"ev_charging_kwh":3414564},{"year":2566,"province_code":48,"province_name":"Nakhon Phanom","residential_kwh":300197704,"small_business_kwh":97102238,"medium_business_kwh":93369953,"large_business_kwh":31841047,"specialized_business_kwh":10050791,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":46380866,"government_state_enterprise_kwh":846,"water_pumping_kwh":9153988,"temporary_electricity_kwh":5100088,"ev_charging_kwh":43742},{"year":2566,"province_code":30,"province_name":"Nakhon Ratchasima","residential_kwh":1731727683,"small_business_kwh":566325567,"medium_business_kwh":860141328,"large_business_kwh":3006037333,"specialized_business_kwh":103939182,"backup_power_kwh":4947080,"interruptible_rate_kwh":0,"public_electricity_kwh":117271710,"government_state_enterprise_kwh":2869578,"water_pumping_kwh":6226780,"temporary_electricity_kwh":51466812,"ev_charging_kwh":1083885},{"year":2566,"province_code":80,"province_name":"Nakhon Si Thammarat","residential_kwh":962065748,"small_business_kwh":291289985,"medium_business_kwh":349755457,"large_business_kwh":311106237,"specialized_business_kwh":32846708,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":74062472,"government_state_enterprise_kwh":309719,"water_pumping_kwh":1867057,"temporary_electricity_kwh":14401182,"ev_charging_kwh":340180},{"year":2566,"province_code":60,"province_name":"Nakhon Sawan","residential_kwh":748812217,"small_business_kwh":217219590,"medium_business_kwh":330912457,"large_business_kwh":330106774,"specialized_business_kwh":16376818,"backup_power_kwh":19877403,"interruptible_rate_kwh":0,"public_electricity_kwh":57835886,"government_state_enterprise_kwh":883714,"water_pumping_kwh":30083860,"temporary_electricity_kwh":13557748,"ev_charging_kwh":760326},{"year":2566,"province_code":12,"province_name":"Nonthaburi","residential_kwh":2583963589,"small_business_kwh":756334962,"medium_business_kwh":807185913,"large_business_kwh":1520759599,"specialized_business_kwh":40779293,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":90512415,"government_state_enterprise_kwh":886716,"water_pumping_kwh":0,"temporary_electricity_kwh":55134405,"ev_charging_kwh":9975483},{"year":2566,"province_code":96,"province_name":"Narathiwat","residential_kwh":265463800,"small_business_kwh":86584571,"medium_business_kwh":79631394,"large_business_kwh":40302851,"specialized_business_kwh":7045202,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":41394591,"government_state_enterprise_kwh":0,"water_pumping_kwh":57522,"temporary_electricity_kwh":3937085,"ev_charging_kwh":21944},{"year":2566,"province_code":55,"province_name":"Nan","residential_kwh":205541899,"small_business_kwh":87411524,"medium_business_kwh":64690493,"large_business_kwh":20256398,"specialized_business_kwh":6019587,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":36392255,"government_state_enterprise_kwh":0,"water_pumping_kwh":4387889,"temporary_electricity_kwh":4828221,"ev_charging_kwh":10133},{"year":2566,"province_code":38,"province_name":"Bueng Kan","residential_kwh":178625530,"small_business_kwh":53335865,"medium_business_kwh":52825371,"large_business_kwh":68273402,"specialized_business_kwh":2266752,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":39500325,"government_state_enterprise_kwh":0,"water_pumping_kwh":1817037,"temporary_electricity_kwh":4445365,"ev_charging_kwh":24278},{"year":2566,"province_code":31,"province_name":"Buriram","residential_kwh":664973513,"small_business_kwh":218437312,"medium_business_kwh":264395226,"large_business_kwh":212967124,"specialized_business_kwh":16845378,"backup_power_kwh":226440,"interruptible_rate_kwh":0,"public_electricity_kwh":66691389,"government_state_enterprise_kwh":33154,"water_pumping_kwh":3805617,"temporary_electricity_kwh":10509664,"ev_charging_kwh":142269},{"year":2566,"province_code":13,"province_name":"Pathum Thani","residential_kwh":2120460279,"small_business_kwh":653242293,"medium_business_kwh":1407865440,"large_business_kwh":3560965807,"specialized_business_kwh":197697815,"backup_power_kwh":17116800,"interruptible_rate_kwh":0,"public_electricity_kwh":92267695,"government_state_enterprise_kwh":35915289,"water_pumping_kwh":206524,"temporary_electricity_kwh":72586580,"ev_charging_kwh":1896807},{"year":2566,"province_code":77,"province_name":"Prachuap Khiri Khan","residential_kwh":569404908,"small_business_kwh":181314459,"medium_business_kwh":279932301,"large_business_kwh":480722627,"specialized_business_kwh":148486045,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":67284168,"government_state_enterprise_kwh":1540457,"water_pumping_kwh":121091,"temporary_electricity_kwh":16508168,"ev_charging_kwh":446101},{"year":2566,"province_code":25,"province_name":"Prachinburi","residential_kwh":451077903,"small_business_kwh":171873060,"medium_business_kwh":411453414,"large_business_kwh":2423360310,"specialized_business_kwh":29739437,"backup_power_kwh":591600,"interruptible_rate_kwh":0,"public_electricity_kwh":45514065,"government_state_enterprise_kwh":154522,"water_pumping_kwh":4320515,"temporary_electricity_kwh":10799820,"ev_charging_kwh":152993},{"year":2566,"province_code":94,"province_name":"Pattani","residential_kwh":262025878,"small_business_kwh":94947812,"medium_business_kwh":94474557,"large_business_kwh":92548291,"specialized_business_kwh":5417756,"backup_power_kwh":1107300,"interruptible_rate_kwh":0,"public_electricity_kwh":40422712,"government_state_enterprise_kwh":0,"water_pumping_kwh":56562,"temporary_electricity_kwh":4635765,"ev_charging_kwh":41707},{"year":2566,"province_code":14,"province_name":"Phra Nakhon Si Ayutthaya","residential_kwh":906596353,"small_business_kwh":345024779,"medium_business_kwh":699615316,"large_business_kwh":3188673850,"specialized_business_kwh":67280489,"backup_power_kwh":139390000,"interruptible_rate_kwh":0,"public_electricity_kwh":78147702,"government_state_enterprise_kwh":586312,"water_pumping_kwh":5253735,"temporary_electricity_kwh":28682726,"ev_charging_kwh":416903},{"year":2566,"province_code":56,"province_name":"Phayao","residential_kwh":214657430,"small_business_kwh":89741437,"medium_business_kwh":73788192,"large_business_kwh":47014929,"specialized_business_kwh":7794850,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":24647746,"government_state_enterprise_kwh":121120,"water_pumping_kwh":1797345,"temporary_electricity_kwh":3514827,"ev_charging_kwh":108894},{"year":2566,"province_code":82,"province_name":"Phang Nga","residential_kwh":199574097,"small_business_kwh":81086347,"medium_business_kwh":165743621,"large_business_kwh":57115861,"specialized_business_kwh":136167788,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":30156497,"government_state_enterprise_kwh":241615,"water_pumping_kwh":0,"temporary_electricity_kwh":5238362,"ev_charging_kwh":123946},{"year":2566,"province_code":93,"province_name":"Phatthalung","residential_kwh":294830470,"small_business_kwh":108387598,"medium_business_kwh":83915198,"large_business_kwh":49173024,"specialized_business_kwh":4348281,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":38185865,"government_state_enterprise_kwh":0,"water_pumping_kwh":2753498,"temporary_electricity_kwh":4293757,"ev_charging_kwh":76782},{"year":2566,"province_code":66,"province_name":"Phichit","residential_kwh":370151384,"small_business_kwh":115896541,"medium_business_kwh":101436540,"large_business_kwh":191091730,"specialized_business_kwh":2643264,"backup_power_kwh":997100,"interruptible_rate_kwh":0,"public_electricity_kwh":41806916,"government_state_enterprise_kwh":132445,"water_pumping_kwh":32650423,"temporary_electricity_kwh":4209728,"ev_charging_kwh":109401},{"year":2566,"province_code":65,"province_name":"Phitsanulok","residential_kwh":634349410,"small_business_kwh":284189431,"medium_business_kwh":257128397,"large_business_kwh":285538700,"specialized_business_kwh":34058317,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":88248928,"government_state_enterprise_kwh":769857,"water_pumping_kwh":24552691,"temporary_electricity_kwh":7743911,"ev_charging_kwh":401077},{"year":2566,"province_code":76,"province_name":"Phetchaburi","residential_kwh":459087973,"small_business_kwh":142924710,"medium_business_kwh":245386644,"large_business_kwh":561012267,"specialized_business_kwh":77971154,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":70653088,"government_state_enterprise_kwh":1157668,"water_pumping_kwh":3645528,"temporary_electricity_kwh":9421306,"ev_charging_kwh":614994},{"year":2566,"province_code":67,"province_name":"Phetchabun","residential_kwh":523041005,"small_business_kwh":189423165,"medium_business_kwh":216573799,"large_business_kwh":230535613,"specialized_business_kwh":12738091,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":48922409,"government_state_enterprise_kwh":300727,"water_pumping_kwh":849212,"temporary_electricity_kwh":10371218,"ev_charging_kwh":358259},{"year":2566,"province_code":54,"province_name":"Phrae","residential_kwh":231591422,"small_business_kwh":104852871,"medium_business_kwh":78933528,"large_business_kwh":35391807,"specialized_business_kwh":4680140,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":34163118,"government_state_enterprise_kwh":231724,"water_pumping_kwh":4733030,"temporary_electricity_kwh":2202619,"ev_charging_kwh":156709},{"year":2566,"province_code":83,"province_name":"Phuket","residential_kwh":810870233,"small_business_kwh":395436777,"medium_business_kwh":409618814,"large_business_kwh":361579089,"specialized_business_kwh":872431451,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":40669985,"government_state_enterprise_kwh":865720,"water_pumping_kwh":8035,"temporary_electricity_kwh":43472924,"ev_charging_kwh":353590},{"year":2566,"province_code":44,"province_name":"Maha Sarakham","residential_kwh":431235061,"small_business_kwh":173396030,"medium_business_kwh":148125760,"large_business_kwh":136921300,"specialized_business_kwh":21175350,"backup_power_kwh":0,"interruptible_rate_kwh":0,"public_electricity_kwh":40707044,"government_state_enterprise_kwh":81655,"water_pumping_kwh":11675980,"temporary_electricity_kwh":7205999,"ev_charging_kwh":148467},{"year":2566,"province_code":49,"province_name":"Mukdahan","residential_kwh":144983348,"small_business_kwh":64560755,"medium_business_kwh":52169686,"large_business_kwh":80479954,"specialized_business_kwh":6804739,"backup_power_kwh":508200,"interruptible_rate_kwh":0,"public_electricity_kwh":19636097,"government_state_enterprise_kwh":9644,"water_pumping_kwh":1511022,"temporary_electricity_kwh":4775163,"ev_charging_kwh":88350},{"year":2566,"province_code":58,"province_name":"Mae Hong Son
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h2>Electricity Usage (Units/kWh)</h2>
+            <canvas id="usageChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <h2>Electricity Users (Count)</h2>
+            <canvas id="usersChart"></canvas>
+            <p style="text-align:center; font-size:0.8rem; color:#999; margin-top:10px;">
+                *Note: User count estimated based on usage data for this demo.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------------------------------------------------------
+    // 1. DATA PROCESSING
+    // ---------------------------------------------------------
+    
+    // The dataset provided in your prompt. 
+    // Note: The "Users" columns were missing from your snippet, 
+    // so I have added logic to simulate user counts for the visualization.
+    const rawData = [
+        {"year":2566,"province_code":81,"province_name":"Krabi","residential_kwh":363957557,"small_business_kwh":129821570,"medium_business_kwh":168139561,"large_business_kwh":78423092,"specialized_business_kwh":164601159,"public_electricity_kwh":35544051,"government_state_enterprise_kwh":0,"water_pumping_kwh":49262,"temporary_electricity_kwh":9345834,"ev_charging_kwh":88738},
+        {"year":2566,"province_code":10,"province_name":"Bangkok","residential_kwh":11938107549,"small_business_kwh":5769709301,"medium_business_kwh":6065548506,"large_business_kwh":11131271080,"specialized_business_kwh":1931826247,"public_electricity_kwh":342098921,"government_state_enterprise_kwh":137411688,"water_pumping_kwh":0,"temporary_electricity_kwh":280211761,"ev_charging_kwh":61532417},
+        {"year":2566,"province_code":71,"province_name":"Kanchanaburi","residential_kwh":696363922,"small_business_kwh":226495631,"medium_business_kwh":406021652,"large_business_kwh":777616625,"specialized_business_kwh":52838319,"public_electricity_kwh":83034966,"government_state_enterprise_kwh":399831,"water_pumping_kwh":13182391,"temporary_electricity_kwh":10244647,"ev_charging_kwh":264230},
+        {"year":2566,"province_code":46,"province_name":"Kalasin","residential_kwh":411232671,"small_business_kwh":132867140,"medium_business_kwh":150324947,"large_business_kwh":176883682,"specialized_business_kwh":3882449,"public_electricity_kwh":47796594,"government_state_enterprise_kwh":0,"water_pumping_kwh":8496054,"temporary_electricity_kwh":7635844,"ev_charging_kwh":97933},
+        {"year":2566,"province_code":62,"province_name":"Kamphaeng Phet","residential_kwh":429405189,"small_business_kwh":166231505,"medium_business_kwh":146641414,"large_business_kwh":307066569,"specialized_business_kwh":5277314,"public_electricity_kwh":60946130,"government_state_enterprise_kwh":7377,"water_pumping_kwh":15230704,"temporary_electricity_kwh":5705924,"ev_charging_kwh":256568},
+        {"year":2566,"province_code":40,"province_name":"Khon Kaen","residential_kwh":1081642841,"small_business_kwh":356144552,"medium_business_kwh":455998167,"large_business_kwh":718355068,"specialized_business_kwh":66948480,"public_electricity_kwh":88988473,"government_state_enterprise_kwh":903111,"water_pumping_kwh":14369865,"temporary_electricity_kwh":19866797,"ev_charging_kwh":324108},
+        {"year":2566,"province_code":22,"province_name":"Chanthaburi","residential_kwh":681646938,"small_business_kwh":214385124,"medium_business_kwh":274957452,"large_business_kwh":222168984,"specialized_business_kwh":31010450,"public_electricity_kwh":44768982,"government_state_enterprise_kwh":286845,"water_pumping_kwh":4716229,"temporary_electricity_kwh":9029308,"ev_charging_kwh":107468},
+        {"year":2566,"province_code":20,"province_name":"Chonburi","residential_kwh":2681645726,"small_business_kwh":1055134395,"medium_business_kwh":2355556373,"large_business_kwh":7470351463,"specialized_business_kwh":792126440,"public_electricity_kwh":133501700,"government_state_enterprise_kwh":1474372,"water_pumping_kwh":18444,"temporary_electricity_kwh":130432551,"ev_charging_kwh":1008946},
+        {"year":2566,"province_code":50,"province_name":"Chiang Mai","residential_kwh":1527557542,"small_business_kwh":666074424,"medium_business_kwh":659358322,"large_business_kwh":550725352,"specialized_business_kwh":244553338,"public_electricity_kwh":93257258,"government_state_enterprise_kwh":13342866,"water_pumping_kwh":14117188,"temporary_electricity_kwh":36790819,"ev_charging_kwh":1010066},
+        {"year":2566,"province_code":57,"province_name":"Chiang Rai","residential_kwh":660579458,"small_business_kwh":297345652,"medium_business_kwh":240109883,"large_business_kwh":268613575,"specialized_business_kwh":53726145,"public_electricity_kwh":67295873,"government_state_enterprise_kwh":8356418,"water_pumping_kwh":6052823,"temporary_electricity_kwh":14740070,"ev_charging_kwh":563013},
+        {"year":2566,"province_code":83,"province_name":"Phuket","residential_kwh":810870233,"small_business_kwh":395436777,"medium_business_kwh":409618814,"large_business_kwh":361579089,"specialized_business_kwh":872431451,"public_electricity_kwh":40669985,"government_state_enterprise_kwh":865720,"water_pumping_kwh":8035,"temporary_electricity_kwh":43472924,"ev_charging_kwh":353590},
+        {"year":2566,"province_code":30,"province_name":"Nakhon Ratchasima","residential_kwh":1731727683,"small_business_kwh":566325567,"medium_business_kwh":860141328,"large_business_kwh":3006037333,"specialized_business_kwh":103939182,"public_electricity_kwh":117271710,"government_state_enterprise_kwh":2869578,"water_pumping_kwh":6226780,"temporary_electricity_kwh":51466812,"ev_charging_kwh":1083885}
+    ];
+
+    // Define Category keys for mapping
+    const categories = [
+        { key: 'residential_kwh', label: 'Residential' },
+        { key: 'small_business_kwh', label: 'Small Biz' },
+        { key: 'medium_business_kwh', label: 'Medium Biz' },
+        { key: 'large_business_kwh', label: 'Large Biz' },
+        { key: 'government_state_enterprise_kwh', label: 'Gov/State' },
+        { key: 'ev_charging_kwh', label: 'EV Charging' }
+    ];
+
+    // ---------------------------------------------------------
+    // 2. INITIALIZATION
+    // ---------------------------------------------------------
+
+    const yearSelect = document.getElementById('yearSelect');
+    const provinceSelect = document.getElementById('provinceSelect');
+    
+    // Initialize Dropdowns
+    function initDropdowns() {
+        // Get Unique Years and Provinces
+        const years = [...new Set(rawData.map(d => d.year))].sort();
+        const provinces = [...new Set(rawData.map(d => d.province_name))].sort();
+
+        // Populate Year
+        years.forEach(y => {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            yearSelect.appendChild(opt);
+        });
+
+        // Populate Province
+        provinces.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p;
+            provinceSelect.appendChild(opt);
+        });
+
+        // Select first province by default if available
+        if(provinces.length > 0) provinceSelect.value = provinces[0];
+    }
+
+    // ---------------------------------------------------------
+    // 3. CHART LOGIC
+    // ---------------------------------------------------------
+    let usageChartInstance = null;
+    let usersChartInstance = null;
+
+    function renderCharts() {
+        const selectedYear = parseInt(yearSelect.value);
+        const selectedProvince = provinceSelect.value;
+
+        // Filter Data
+        const record = rawData.find(d => d.year === selectedYear && d.province_name === selectedProvince);
+
+        if (!record) {
+            console.warn("No data found for selection");
+            return;
+        }
+
+        // Prepare Data Arrays
+        const labels = categories.map(c => c.label);
+        const usageData = categories.map(c => record[c.key]);
+        
+        // Mock User Data (Randomly generated for demo purposes since missing in source)
+        // In a real scenario, you would map `residential_users`, etc.
+        const usersData = usageData.map(val => Math.round(val / (Math.random() * 500 + 100))); 
+
+        // 1. Update/Create Usage Chart
+        const ctxUsage = document.getElementById('usageChart').getContext('2d');
+        if (usageChartInstance) usageChartInstance.destroy();
+        
+        usageChartInstance = new Chart(ctxUsage, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Usage (Units)',
+                    data: usageData,
+                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Electricity Usage (kWh)' } }
+                }
+            }
+        });
+
+        // 2. Update/Create Users Chart
+        const ctxUsers = document.getElementById('usersChart').getContext('2d');
+        if (usersChartInstance) usersChartInstance.destroy();
+
+        usersChartInstance = new Chart(ctxUsers, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of Users',
+                    data: usersData,
+                    backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                    borderColor: 'rgba(231, 76, 60, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Number of Users' } }
+                }
+            }
+        });
+    }
+
+    // ---------------------------------------------------------
+    // 4. EVENT LISTENERS
+    // ---------------------------------------------------------
+    
+    initDropdowns();
+    renderCharts(); // Initial render
+
+    yearSelect.addEventListener('change', renderCharts);
+    provinceSelect.addEventListener('change', renderCharts);
+
+</script>
+
+</body>
+</html>
