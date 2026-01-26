@@ -224,26 +224,42 @@
                     fetch('electricity_users_en.json')
                 ]);
 
+                if (!usagesRes.ok || !usersRes.ok) {
+                    throw new Error('Failed to fetch JSON files');
+                }
+
                 const usagesJson = await usagesRes.json();
                 const usersJson = await usersRes.json();
 
                 // Handle nested structure in electricity_usages_en.json
-                if (usagesJson[0] && usagesJson[0].Sheet1) {
-                    usagesData = usagesJson[0].Sheet1;
+                if (usagesJson.Sheet1 && Array.isArray(usagesJson.Sheet1)) {
+                    usagesData = usagesJson.Sheet1;
                 } else if (Array.isArray(usagesJson)) {
                     usagesData = usagesJson;
+                } else {
+                    throw new Error('Invalid usages data structure');
                 }
 
                 // Handle electricity_users_en.json
-                usersData = Array.isArray(usersJson) ? usersJson : (usersJson[0] && usersJson[0].Sheet1 ? usersJson[0].Sheet1 : []);
+                if (Array.isArray(usersJson)) {
+                    usersData = usersJson;
+                } else if (usersJson.Sheet1 && Array.isArray(usersJson.Sheet1)) {
+                    usersData = usersJson.Sheet1;
+                } else {
+                    throw new Error('Invalid users data structure');
+                }
 
-                console.log('Usages Data:', usagesData);
-                console.log('Users Data:', usersData);
+                console.log('Usages Data loaded:', usagesData.length, 'records');
+                console.log('Users Data loaded:', usersData.length, 'records');
+
+                if (usagesData.length === 0 || usersData.length === 0) {
+                    throw new Error('Data arrays are empty');
+                }
 
                 initializeFilters();
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.querySelector('.charts-grid').innerHTML = '<div class="error">Error loading data. Please check console.</div>';
+                document.querySelector('.charts-grid').innerHTML = '<div class="error">Error loading data: ' + error.message + '. Make sure you\'re running this on a web server (http://localhost:8000), not via file:// protocol.</div>';
             }
         }
 
