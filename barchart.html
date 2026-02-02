@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Bar Charts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.5rem; }
+        .filter-section { background: white; border-radius: 1rem; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body class="p-6 md:p-10">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-bold text-[#1e293b] mb-2">Electricity Bar Charts</h1>
+                <p class="text-slate-500">Usage and User Analysis by Category and Province</p>
+            </div>
+            <a href="index.html" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">Back to Dashboard</a>
+        </div>
+
+        <!-- Unified Filters -->
+        <div class="filter-section">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Select Year</label>
+                    <select id="yearFilter" class="w-full border rounded-lg px-4 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500 border-slate-300">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Select Province</label>
+                    <select id="provinceFilter" class="w-full border rounded-lg px-4 py-2 bg-white outline-none focus:ring-2 focus:ring-blue-500 border-slate-300">
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== ELECTRICITY USAGE CHART ==================== -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Electricity Usage by Category</h2>
+
+            <!-- Chart Container -->
+            <div class="card">
+                <canvas id="usageChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <!-- ==================== ELECTRICITY USERS CHART ==================== -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Electricity Users by Category</h2>
+
+            <!-- Chart Container -->
+            <div class="card">
+                <canvas id="usersChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let usageData = [];
+        let usersData = [];
+        let usageChart = null;
+        let usersChart = null;
+
+        const categoryLabels = {
+            'residential_kwh': 'Residential',
+            'small_business_kwh': 'Small Business',
+            'medium_business_kwh': 'Medium Business',
+            'large_business_kwh': 'Large Business',
+            'specialized_business_kwh': 'Specialized Business',
+            'backup_power_kwh': 'Backup Power',
+            'interruptible_rate_kwh': 'Interruptible Rate',
+            'public_electricity_kwh': 'Public Electricity',
+            'government_state_enterprise_kwh': 'Government/State Enterprise',
+            'water_pumping_kwh': 'Water Pumping',
+            'temporary_electricity_kwh': 'Temporary Electricity',
+            'ev_charging_kwh': 'EV Charging'
+        };
+
+        const usersCategoryLabels = {
+            'residential_count': 'Residential',
+            'small_business_count': 'Small Business',
+            'medium_business_count': 'Medium Business',
+            'large_business_count': 'Large Business',
+            'specialized_business_count': 'Specialized Business',
+            'backup_power_count': 'Backup Power',
+            'interruptible_rate_count': 'Interruptible Rate',
+            'public_electricity_count': 'Public Electricity',
+            'government_state_enterprise_count': 'Government/State Enterprise',
+            'water_pumping_count': 'Water Pumping',
+            'temporary_electricity_count': 'Temporary Electricity',
+            'ev_charging_count': 'EV Charging'
+        };
+
+        const colors = [
+            '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
+            '#06b6d4', '#6366f1', '#f97316', '#14b8a6', '#a855f7',
+            '#d946ef', '#0ea5e9'
+        ];
+
+        async function loadData() {
+            try {
+                // Load electricity usage data
+                const usageRes = await fetch('./electricity_usages_en.json');
+                if (!usageRes.ok) throw new Error(`Failed to load usage data: ${usageRes.status}`);
+                const usageRaw = await usageRes.json();
+                usageData = usageRaw.Sheet1 || usageRaw;
+
+                // Load electricity users data
+                const usersRes = await fetch('./electricity_users_en.json');
+                if (!usersRes.ok) throw new Error(`Failed to load users data: ${usersRes.status}`);
+                usersData = await usersRes.json();
+
+                // Populate province filters
+                const provinces = [...new Set(usageData.map(d => d.province_name))].sort();
+                const provinceSelect = document.getElementById('provinceFilter');
+                
+                provinces.forEach(province => {
+                    const option = document.createElement('option');
+                    option.value = province;
+                    option.textContent = province;
+                    provinceSelect.appendChild(option);
+                });
+
+                // Set first province as default
+                if (provinces.length > 0) {
+                    provinceSelect.value = provinces[0];
+                }
+
+                // Populate year filter
+                const years = [...new Set(usageData.map(d => d.year))].sort((a, b) => a - b);
+                const yearSelect = document.getElementById('yearFilter');
+                
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearSelect.appendChild(option);
+                });
+
+                // Set first year as default
+                if (years.length > 0) {
+                    yearSelect.value = years[0];
+                }
+
+                // Initialize charts
+                updateUsageChart();
+                updateUsersChart();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                const message = `Error loading data:\n\n${error.message}\n\nMake sure electricity_usages_en.json and electricity_users_en.json are in the same folder as this HTML file.`;
+                alert(message);
+                document.body.innerHTML += `<div style="padding: 20px; background-color: #fee; color: #c00; font-family: Arial;"><strong>Error:</strong> ${message.replace(/\n/g, '<br>')}</div>`;
+            }
+        }
+
+        function updateAllCharts() {
+            updateUsageChart();
+            updateUsersChart();
+        }
+
+        function updateUsageChart() {
+            const selectedYear = document.getElementById('yearFilter').value;
+            const selectedProvince = document.getElementById('provinceFilter').value;
+            const chartType = 'bar';
+
+            // Filter data
+            let filteredData = usageData.filter(d => d.year == selectedYear);
+            if (selectedProvince) {
+                filteredData = filteredData.filter(d => d.province_name === selectedProvince);
+            }
+
+            if (filteredData.length === 0) {
+                alert('No data available for selected filters.');
+                return;
+            }
+
+            // Prepare chart data
+            const labels = Object.values(categoryLabels);
+            const datasets = filteredData.map((province, index) => {
+                const data = Object.keys(categoryLabels).map(key => province[key] || 0);
+                return {
+                    label: province.province_name,
+                    data: data,
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 1,
+                    tension: 0.4
+                };
+            });
+
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            
+            if (usageChart) {
+                usageChart.destroy();
+            }
+
+            usageChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: selectedProvince ? `${selectedProvince} - Electricity Usage by Category (${selectedYear})` : `All Provinces - Electricity Usage by Category (${selectedYear})`,
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: { font: { size: 12 }, usePointStyle: true }
+                        }
+                    },
+                    scales: chartType !== 'radar' ? {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                callback: function(value) { 
+                                    if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                                    if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                                    return value;
+                                }
+                            },
+                            title: { display: true, text: 'Energy (kWh)' }
+                        },
+                        x: {
+                            ticks: { font: { size: 11 } }
+                        }
+                    } : {}
+                }
+            });
+        }
+
+        function updateUsersChart() {
+            const selectedYear = document.getElementById('yearFilter').value;
+            const selectedProvince = document.getElementById('provinceFilter').value;
+            const chartType = 'bar';
+
+            // Filter data
+            let filteredData = usersData.filter(d => d.year == selectedYear);
+            if (selectedProvince) {
+                filteredData = filteredData.filter(d => d.province_name === selectedProvince);
+            }
+
+            if (filteredData.length === 0) {
+                alert('No data available for selected filters.');
+                return;
+            }
+
+            // Prepare chart data
+            const labels = Object.values(usersCategoryLabels);
+            const datasets = filteredData.map((province, index) => {
+                const data = Object.keys(usersCategoryLabels).map(key => province[key] || 0);
+                return {
+                    label: province.province_name,
+                    data: data,
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
+                    borderWidth: 1,
+                    tension: 0.4
+                };
+            });
+
+            const ctx = document.getElementById('usersChart').getContext('2d');
+            
+            if (usersChart) {
+                usersChart.destroy();
+            }
+
+            usersChart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: selectedProvince ? `${selectedProvince} - Electricity Users by Category (${selectedYear})` : `All Provinces - Electricity Users by Category (${selectedYear})`,
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: { font: { size: 12 }, usePointStyle: true }
+                        }
+                    },
+                    scales: chartType !== 'radar' ? {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                callback: function(value) { 
+                                    return value.toLocaleString();
+                                }
+                            },
+                            title: { display: true, text: 'Number of Users' }
+                        },
+                        x: {
+                            ticks: { font: { size: 11 } }
+                        }
+                    } : {}
+                }
+            });
+        }
+
+        // Add event listeners for real-time updates
+        document.getElementById('yearFilter').addEventListener('change', updateAllCharts);
+        document.getElementById('provinceFilter').addEventListener('change', updateAllCharts);
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
